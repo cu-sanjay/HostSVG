@@ -1,0 +1,459 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560">
+  <defs>
+    <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-blue" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="card-shadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+
+    <!-- Reusable house shape: centered at (0,0), extends up ~28px, down ~20px, wide ~30px -->
+    <symbol id="house" viewBox="-18 -30 36 50" width="36" height="50">
+      <!-- Roof -->
+      <polygon points="0,-30 18,-10 -18,-10" fill="inherit"/>
+      <!-- Body -->
+      <rect x="-13" y="-10" width="26" height="20" fill="inherit"/>
+      <!-- Door -->
+      <rect x="-5" y="2" width="10" height="8" fill="white" opacity="0.85" rx="2"/>
+      <!-- Window -->
+      <rect x="-11" y="-5" width="8" height="7" fill="white" opacity="0.7" rx="1"/>
+      <rect x="3" y="-5" width="8" height="7" fill="white" opacity="0.7" rx="1"/>
+    </symbol>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+    /* ── House fills: 5 phases × 5 houses, 20s cycle ─────────────────────────
+       States: HOST=#ef4444  GUEST=#0ea5e9  NONE=#cbd5e1
+       Phase timing (% of 20s):
+         P1: 0–20%   P2: 20–40%   P3: 40–60%   P4: 60–80%   P5: 80–100%
+       Who is what:
+         x=1: H G G N N
+         x=2: G H G G G
+         x=3: G G H G G
+         x=4: G G G H G
+         x=5: N N G G H
+         (Phase 3 host=x=3 invites x=1,x=2,x=4 so x=5 is NOT invited → N
+          Actually: Phase 3 invites 3 closest to x=3: x=2(d=1),x=4(d=1),x=1(d=2). x=5 not invited.
+          Phase 4 host=x=4 invites x=3(d=1),x=5(d=1),x=2(d=2). x=1 not invited.
+          Phase 5 host=x=5 invites x=4(d=1),x=3(d=2),x=2(d=3). x=1 not invited.)
+    ── */
+
+    /* x=1: H G G N N */
+    @keyframes fill0 {
+      0%,18%   { fill:#ef4444 }
+      20%,38%  { fill:#0ea5e9 }
+      40%,58%  { fill:#0ea5e9 }
+      60%,78%  { fill:#cbd5e1 }
+      80%,100% { fill:#cbd5e1 }
+    }
+    /* x=2: G H G G G */
+    @keyframes fill1 {
+      0%,18%   { fill:#0ea5e9 }
+      20%,38%  { fill:#ef4444 }
+      40%,58%  { fill:#0ea5e9 }
+      60%,78%  { fill:#0ea5e9 }
+      80%,100% { fill:#0ea5e9 }
+    }
+    /* x=3: G G H G G */
+    @keyframes fill2 {
+      0%,18%   { fill:#0ea5e9 }
+      20%,38%  { fill:#0ea5e9 }
+      40%,58%  { fill:#ef4444 }
+      60%,78%  { fill:#0ea5e9 }
+      80%,100% { fill:#0ea5e9 }
+    }
+    /* x=4: G G G H G */
+    @keyframes fill3 {
+      0%,18%   { fill:#0ea5e9 }
+      20%,38%  { fill:#0ea5e9 }
+      40%,58%  { fill:#0ea5e9 }
+      60%,78%  { fill:#ef4444 }
+      80%,100% { fill:#0ea5e9 }
+    }
+    /* x=5: N N N G H  (Phase3: x=5 NOT invited, Phase4: x=5 IS guest) */
+    @keyframes fill4 {
+      0%,18%   { fill:#cbd5e1 }
+      20%,38%  { fill:#cbd5e1 }
+      40%,58%  { fill:#cbd5e1 }
+      60%,78%  { fill:#0ea5e9 }
+      80%,100% { fill:#ef4444 }
+    }
+
+    .h0 { animation: fill0 20s infinite; }
+    .h1 { animation: fill1 20s infinite; }
+    .h2 { animation: fill2 20s infinite; }
+    .h3 { animation: fill3 20s infinite; }
+    .h4 { animation: fill4 20s infinite; }
+
+    /* Host ring glow — one per house, appears only when that house is host */
+    @keyframes ring0 { 0%,18%{opacity:1}20%,100%{opacity:0} }
+    @keyframes ring1 { 0%,18%{opacity:0}20%,38%{opacity:1}40%,100%{opacity:0} }
+    @keyframes ring2 { 0%,38%{opacity:0}40%,58%{opacity:1}60%,100%{opacity:0} }
+    @keyframes ring3 { 0%,58%{opacity:0}60%,78%{opacity:1}80%,100%{opacity:0} }
+    @keyframes ring4 { 0%,78%{opacity:0}80%,100%{opacity:1} }
+
+    .ring0 { animation: ring0 20s infinite; }
+    .ring1 { animation: ring1 20s infinite; }
+    .ring2 { animation: ring2 20s infinite; }
+    .ring3 { animation: ring3 20s infinite; }
+    .ring4 { animation: ring4 20s infinite; }
+
+    /* Arc visibility per phase */
+    @keyframes arc1 { 0%,2%{opacity:1}18%,100%{opacity:0} }
+    @keyframes arc2 { 0%,19%{opacity:0}22%,38%{opacity:1}40%,100%{opacity:0} }
+    @keyframes arc3 { 0%,39%{opacity:0}42%,58%{opacity:1}60%,100%{opacity:0} }
+    @keyframes arc4 { 0%,59%{opacity:0}62%,78%{opacity:1}80%,100%{opacity:0} }
+    @keyframes arc5 { 0%,79%{opacity:0}82%,98%{opacity:1}100%{opacity:0} }
+
+    .arc-p1 { animation: arc1 20s infinite; }
+    .arc-p2 { animation: arc2 20s infinite; }
+    .arc-p3 { animation: arc3 20s infinite; }
+    .arc-p4 { animation: arc4 20s infinite; }
+    .arc-p5 { animation: arc5 20s infinite; }
+
+    /* Info panel crossfades */
+    @keyframes ui1 { 0%,2%{opacity:1}18%,100%{opacity:0} }
+    @keyframes ui2 { 0%,19%{opacity:0}22%,38%{opacity:1}40%,100%{opacity:0} }
+    @keyframes ui3 { 0%,39%{opacity:0}42%,58%{opacity:1}60%,100%{opacity:0} }
+    @keyframes ui4 { 0%,59%{opacity:0}62%,78%{opacity:1}80%,100%{opacity:0} }
+    @keyframes ui5 { 0%,79%{opacity:0}82%,98%{opacity:1}100%{opacity:0} }
+
+    .ui-p1 { animation: ui1 20s infinite; }
+    .ui-p2 { animation: ui2 20s infinite; }
+    .ui-p3 { animation: ui3 20s infinite; }
+    .ui-p4 { animation: ui4 20s infinite; }
+    .ui-p5 { animation: ui5 20s infinite; }
+
+    /* Distance label fade */
+    @keyframes dl1 { 0%,2%{opacity:1}18%,100%{opacity:0} }
+    @keyframes dl2 { 0%,19%{opacity:0}22%,38%{opacity:1}40%,100%{opacity:0} }
+    @keyframes dl3 { 0%,39%{opacity:0}42%,58%{opacity:1}60%,100%{opacity:0} }
+    @keyframes dl4 { 0%,59%{opacity:0}62%,78%{opacity:1}80%,100%{opacity:0} }
+    @keyframes dl5 { 0%,79%{opacity:0}82%,98%{opacity:1}100%{opacity:0} }
+    .dl-p1 { animation: dl1 20s infinite; }
+    .dl-p2 { animation: dl2 20s infinite; }
+    .dl-p3 { animation: dl3 20s infinite; }
+    .dl-p4 { animation: dl4 20s infinite; }
+    .dl-p5 { animation: dl5 20s infinite; }
+
+    /* Phase indicator dots */
+    @keyframes dot1 { 0%,18%{r:7;fill:#ef4444}20%,100%{r:5;fill:#e2e8f0} }
+    @keyframes dot2 { 0%,18%{r:5;fill:#e2e8f0}20%,38%{r:7;fill:#ef4444}40%,100%{r:5;fill:#e2e8f0} }
+    @keyframes dot3 { 0%,38%{r:5;fill:#e2e8f0}40%,58%{r:7;fill:#ef4444}60%,100%{r:5;fill:#e2e8f0} }
+    @keyframes dot4 { 0%,58%{r:5;fill:#e2e8f0}60%,78%{r:7;fill:#ef4444}80%,100%{r:5;fill:#e2e8f0} }
+    @keyframes dot5 { 0%,78%{r:5;fill:#e2e8f0}80%,100%{r:7;fill:#ef4444} }
+    .dot1 { animation: dot1 20s infinite; }
+    .dot2 { animation: dot2 20s infinite; }
+    .dot3 { animation: dot3 20s infinite; }
+    .dot4 { animation: dot4 20s infinite; }
+    .dot5 { animation: dot5 20s infinite; }
+  </style>
+
+  <!-- ── Background ─────────────────────────────────────────────── -->
+  <rect width="960" height="560" fill="#f1f5f9" rx="0"/>
+  <!-- Card -->
+  <rect x="16" y="16" width="928" height="528" fill="#ffffff" rx="20" filter="url(#card-shadow)"/>
+
+  <!-- ── Title ──────────────────────────────────────────────────── -->
+  <text x="48" y="56" fill="#0f172a" font-size="22" font-weight="800" letter-spacing="-0.4">Nearest Friend's House (By Sanjay Choudhary)</text>
+  <text x="48" y="79" fill="#64748b" font-size="13.5" font-weight="500">N = 5 · A = [1, 2, 3, 4, 5] · Invite N−2 = 3 closest friends each time</text>
+
+  <!-- Phase indicator dots -->
+  <text x="700" y="56" fill="#94a3b8" font-size="12" font-weight="600">PHASE</text>
+  <circle cx="760" cy="52" r="5" class="dot1"/>
+  <circle cx="778" cy="52" r="5" class="dot2"/>
+  <circle cx="796" cy="52" r="5" class="dot3"/>
+  <circle cx="814" cy="52" r="5" class="dot4"/>
+  <circle cx="832" cy="52" r="5" class="dot5"/>
+  <text x="760" y="75" fill="#94a3b8" font-size="11" text-anchor="middle">1</text>
+  <text x="778" y="75" fill="#94a3b8" font-size="11" text-anchor="middle">2</text>
+  <text x="796" y="75" fill="#94a3b8" font-size="11" text-anchor="middle">3</text>
+  <text x="814" y="75" fill="#94a3b8" font-size="11" text-anchor="middle">4</text>
+  <text x="832" y="75" fill="#94a3b8" font-size="11" text-anchor="middle">5</text>
+
+  <!-- ── Number line ─────────────────────────────────────────────── -->
+  <!-- House SVG x positions: x=1→130, x=2→265, x=3→400, x=4→535, x=5→670 -->
+  <!-- Number line at y=295 -->
+  <line x1="90" y1="295" x2="880" y2="295" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="884,295 872,289 872,301" fill="#94a3b8"/>
+  <text x="891" y="300" fill="#94a3b8" font-size="12" font-weight="600" dominant-baseline="middle">x</text>
+
+  <!-- tick marks and x-labels -->
+  <line x1="130" y1="291" x2="130" y2="299" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="265" y1="291" x2="265" y2="299" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="400" y1="291" x2="400" y2="299" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="535" y1="291" x2="535" y2="299" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="670" y1="291" x2="670" y2="299" stroke="#94a3b8" stroke-width="2"/>
+
+  <!-- x-coord labels -->
+  <text x="130" y="315" fill="#334155" font-size="14" font-weight="700" text-anchor="middle">1</text>
+  <text x="265" y="315" fill="#334155" font-size="14" font-weight="700" text-anchor="middle">2</text>
+  <text x="400" y="315" fill="#334155" font-size="14" font-weight="700" text-anchor="middle">3</text>
+  <text x="535" y="315" fill="#334155" font-size="14" font-weight="700" text-anchor="middle">4</text>
+  <text x="670" y="315" fill="#334155" font-size="14" font-weight="700" text-anchor="middle">5</text>
+
+  <!-- ── Distance bracket lines (on the number line, per phase) ───── -->
+  <!-- P1: host=130, guests=265,400,535. Brackets below the line at y=295 -->
+  <g class="dl-p1">
+    <line x1="130" y1="330" x2="265" y2="330" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="197" y="346" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">1</text>
+    <line x1="130" y1="338" x2="400" y2="338" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="265" y="354" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">2</text>
+    <line x1="130" y1="346" x2="535" y2="346" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="332" y="362" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">3</text>
+  </g>
+  <!-- P2: host=265, guests=130,400,535 -->
+  <g class="dl-p2">
+    <line x1="130" y1="330" x2="265" y2="330" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="197" y="346" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">1</text>
+    <line x1="265" y1="338" x2="400" y2="338" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="332" y="354" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">1</text>
+    <line x1="265" y1="346" x2="535" y2="346" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="400" y="362" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">2</text>
+  </g>
+  <!-- P3: host=400, guests=130,265,535 -->
+  <g class="dl-p3">
+    <line x1="130" y1="330" x2="400" y2="330" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="265" y="346" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">2</text>
+    <line x1="265" y1="338" x2="400" y2="338" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="332" y="354" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">1</text>
+    <line x1="400" y1="346" x2="535" y2="346" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="467" y="362" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">1</text>
+  </g>
+  <!-- P4: host=535, guests=265,400,670 -->
+  <g class="dl-p4">
+    <line x1="265" y1="330" x2="535" y2="330" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="400" y="346" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">2</text>
+    <line x1="400" y1="338" x2="535" y2="338" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="467" y="354" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">1</text>
+    <line x1="535" y1="346" x2="670" y2="346" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="602" y="362" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">1</text>
+  </g>
+  <!-- P5: host=670, guests=265,400,535 -->
+  <g class="dl-p5">
+    <line x1="265" y1="330" x2="670" y2="330" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="467" y="346" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">3</text>
+    <line x1="400" y1="338" x2="670" y2="338" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="535" y="354" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">2</text>
+    <line x1="535" y1="346" x2="670" y2="346" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="602" y="362" fill="#0ea5e9" font-size="11" font-weight="700" text-anchor="middle">1</text>
+  </g>
+
+  <!-- ── Travel arcs (curved paths from guests → host) ─────────────── -->
+  <!-- P1: host x=1 (130). Guests: x=2(265), x=3(400), x=4(535) -->
+  <g class="arc-p1" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.8">
+    <path d="M265,293 Q197,195 130,293"/>
+    <path d="M400,293 Q265,140 130,293"/>
+    <path d="M535,293 Q332,100 130,293"/>
+  </g>
+
+  <!-- P2: host x=2 (265). Guests: x=1(130), x=3(400), x=4(535) -->
+  <g class="arc-p2" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.8">
+    <path d="M130,293 Q197,195 265,293"/>
+    <path d="M400,293 Q332,195 265,293"/>
+    <path d="M535,293 Q400,130 265,293"/>
+  </g>
+
+  <!-- P3: host x=3 (400). Guests: x=1(130), x=2(265), x=4(535) -->
+  <g class="arc-p3" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.8">
+    <path d="M130,293 Q265,130 400,293"/>
+    <path d="M265,293 Q332,195 400,293"/>
+    <path d="M535,293 Q467,195 400,293"/>
+  </g>
+
+  <!-- P4: host x=4 (535). Guests: x=2(265), x=3(400), x=5(670) -->
+  <g class="arc-p4" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.8">
+    <path d="M265,293 Q400,130 535,293"/>
+    <path d="M400,293 Q467,195 535,293"/>
+    <path d="M670,293 Q602,195 535,293"/>
+  </g>
+
+  <!-- P5: host x=5 (670). Guests: x=2(265), x=3(400), x=4(535) -->
+  <g class="arc-p5" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.8">
+    <path d="M265,293 Q467,130 670,293"/>
+    <path d="M400,293 Q535,140 670,293"/>
+    <path d="M535,293 Q602,195 670,293"/>
+  </g>
+
+  <!-- ── Houses ─────────────────────────────────────────────────── -->
+  <!-- Houses sit centered on the number line dots at y=293 -->
+  <!-- Icon is 36×50 centered at (0,0) in the symbol, placed so bottom touches y=293 -->
+
+  <!-- House 0 (x=1 → svgX=130) -->
+  <g transform="translate(130,270)">
+    <!-- Host ring glow -->
+    <circle cx="0" cy="0" r="28" fill="none" stroke="#ef4444" stroke-width="3" opacity="0" class="ring0"/>
+    <circle cx="0" cy="0" r="34" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0" class="ring0"/>
+    <!-- House icon using symbol -->
+    <use href="#house" x="-18" y="-30" class="h0"/>
+    <!-- Dot on number line -->
+    <circle cy="23" r="6" class="h0"/>
+  </g>
+
+  <!-- House 1 (x=2 → svgX=265) -->
+  <g transform="translate(265,270)">
+    <circle cx="0" cy="0" r="28" fill="none" stroke="#ef4444" stroke-width="3" opacity="0" class="ring1"/>
+    <circle cx="0" cy="0" r="34" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0" class="ring1"/>
+    <use href="#house" x="-18" y="-30" class="h1"/>
+    <circle cy="23" r="6" class="h1"/>
+  </g>
+
+  <!-- House 2 (x=3 → svgX=400) -->
+  <g transform="translate(400,270)">
+    <circle cx="0" cy="0" r="28" fill="none" stroke="#ef4444" stroke-width="3" opacity="0" class="ring2"/>
+    <circle cx="0" cy="0" r="34" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0" class="ring2"/>
+    <use href="#house" x="-18" y="-30" class="h2"/>
+    <circle cy="23" r="6" class="h2"/>
+  </g>
+
+  <!-- House 3 (x=4 → svgX=535) -->
+  <g transform="translate(535,270)">
+    <circle cx="0" cy="0" r="28" fill="none" stroke="#ef4444" stroke-width="3" opacity="0" class="ring3"/>
+    <circle cx="0" cy="0" r="34" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0" class="ring3"/>
+    <use href="#house" x="-18" y="-30" class="h3"/>
+    <circle cy="23" r="6" class="h3"/>
+  </g>
+
+  <!-- House 4 (x=5 → svgX=670) -->
+  <g transform="translate(670,270)">
+    <circle cx="0" cy="0" r="28" fill="none" stroke="#ef4444" stroke-width="3" opacity="0" class="ring4"/>
+    <circle cx="0" cy="0" r="34" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0" class="ring4"/>
+    <use href="#house" x="-18" y="-30" class="h4"/>
+    <circle cy="23" r="6" class="h4"/>
+  </g>
+
+  <!-- ── Info Panel ──────────────────────────────────────────────── -->
+  <rect x="40" y="385" width="880" height="148" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" rx="16" filter="url(#card-shadow)"/>
+
+  <!-- Legend -->
+  <rect x="64" y="404" width="14" height="14" fill="#ef4444" rx="3"/>
+  <text x="84" y="415" fill="#475569" font-size="12" font-weight="600">Host (current)</text>
+  <rect x="200" y="404" width="14" height="14" fill="#0ea5e9" rx="3"/>
+  <text x="220" y="415" fill="#475569" font-size="12" font-weight="600">Invited guests (N−2 = 3)</text>
+  <rect x="390" y="404" width="14" height="14" fill="#cbd5e1" rx="3"/>
+  <text x="410" y="415" fill="#475569" font-size="12" font-weight="600">Not invited</text>
+
+  <!-- Separator -->
+  <line x1="64" y1="427" x2="896" y2="427" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- ── Phase info blocks (one per phase, crossfaded) ── -->
+
+  <!-- P1: host=x=1, guests=x=2,3,4, dist=1+2+3=6 -->
+  <g class="ui-p1">
+    <text x="64" y="452" fill="#0f172a" font-size="17" font-weight="800">Host: x = 1</text>
+    <text x="64" y="475" fill="#64748b" font-size="13">Invites 3 closest →</text>
+    <rect x="224" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="252" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 2</text>
+    <rect x="288" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="316" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 3</text>
+    <rect x="352" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="380" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 4</text>
+    <text x="64" y="503" fill="#64748b" font-size="13">Distance = |2−1| + |3−1| + |4−1| =</text>
+    <text x="337" y="503" fill="#475569" font-size="13" font-weight="700">1 + 2 + 3</text>
+    <text x="64" y="524" fill="#64748b" font-size="13">Output[0] =</text>
+    <rect x="156" y="510" width="48" height="24" fill="#fef2f2" rx="8"/>
+    <text x="180" y="527" fill="#ef4444" font-size="18" font-weight="800" text-anchor="middle">6</text>
+  </g>
+
+  <!-- P2: host=x=2, guests=x=1,3,4, dist=1+1+2=4 -->
+  <g class="ui-p2">
+    <text x="64" y="452" fill="#0f172a" font-size="17" font-weight="800">Host: x = 2</text>
+    <text x="64" y="475" fill="#64748b" font-size="13">Invites 3 closest →</text>
+    <rect x="224" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="252" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 1</text>
+    <rect x="288" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="316" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 3</text>
+    <rect x="352" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="380" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 4</text>
+    <text x="64" y="503" fill="#64748b" font-size="13">Distance = |2−1| + |3−2| + |4−2| =</text>
+    <text x="337" y="503" fill="#475569" font-size="13" font-weight="700">1 + 1 + 2</text>
+    <text x="64" y="524" fill="#64748b" font-size="13">Output[1] =</text>
+    <rect x="156" y="510" width="48" height="24" fill="#f0fdf4" rx="8"/>
+    <text x="180" y="527" fill="#10b981" font-size="18" font-weight="800" text-anchor="middle">4</text>
+  </g>
+
+  <!-- P3: host=x=3, guests=x=1,2,4 (N-2=3 closest: dist 2,1,1), total=4 -->
+  <g class="ui-p3">
+    <text x="64" y="452" fill="#0f172a" font-size="17" font-weight="800">Host: x = 3</text>
+    <text x="64" y="475" fill="#64748b" font-size="13">Invites 3 closest →</text>
+    <rect x="224" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="252" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 1</text>
+    <rect x="288" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="316" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 2</text>
+    <rect x="352" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="380" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 4</text>
+    <text x="64" y="503" fill="#64748b" font-size="13">Distance = |3−1| + |3−2| + |4−3| =</text>
+    <text x="337" y="503" fill="#475569" font-size="13" font-weight="700">2 + 1 + 1</text>
+    <text x="64" y="524" fill="#64748b" font-size="13">Output[2] =</text>
+    <rect x="156" y="510" width="48" height="24" fill="#f0fdf4" rx="8"/>
+    <text x="180" y="527" fill="#10b981" font-size="18" font-weight="800" text-anchor="middle">4</text>
+  </g>
+
+  <!-- P4: host=x=4, guests=x=2,3,5 (dist 2,1,1), total=4 -->
+  <g class="ui-p4">
+    <text x="64" y="452" fill="#0f172a" font-size="17" font-weight="800">Host: x = 4</text>
+    <text x="64" y="475" fill="#64748b" font-size="13">Invites 3 closest →</text>
+    <rect x="224" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="252" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 2</text>
+    <rect x="288" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="316" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 3</text>
+    <rect x="352" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="380" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 5</text>
+    <text x="64" y="503" fill="#64748b" font-size="13">Distance = |4−2| + |4−3| + |5−4| =</text>
+    <text x="337" y="503" fill="#475569" font-size="13" font-weight="700">2 + 1 + 1</text>
+    <text x="64" y="524" fill="#64748b" font-size="13">Output[3] =</text>
+    <rect x="156" y="510" width="48" height="24" fill="#f0fdf4" rx="8"/>
+    <text x="180" y="527" fill="#10b981" font-size="18" font-weight="800" text-anchor="middle">4</text>
+  </g>
+
+  <!-- P5: host=x=5, guests=x=2,3,4 (dist 3,2,1), total=6 -->
+  <g class="ui-p5">
+    <text x="64" y="452" fill="#0f172a" font-size="17" font-weight="800">Host: x = 5</text>
+    <text x="64" y="475" fill="#64748b" font-size="13">Invites 3 closest →</text>
+    <rect x="224" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="252" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 2</text>
+    <rect x="288" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="316" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 3</text>
+    <rect x="352" y="461" width="56" height="22" fill="#dbeafe" rx="6"/>
+    <text x="380" y="476" fill="#1d4ed8" font-size="13" font-weight="700" text-anchor="middle">x = 4</text>
+    <text x="64" y="503" fill="#64748b" font-size="13">Distance = |5−2| + |5−3| + |5−4| =</text>
+    <text x="337" y="503" fill="#475569" font-size="13" font-weight="700">3 + 2 + 1</text>
+    <text x="64" y="524" fill="#64748b" font-size="13">Output[4] =</text>
+    <rect x="156" y="510" width="48" height="24" fill="#fef2f2" rx="8"/>
+    <text x="180" y="527" fill="#ef4444" font-size="18" font-weight="800" text-anchor="middle">6</text>
+  </g>
+
+  <!-- Output array on the right side of the info panel -->
+  <rect x="640" y="437" width="276" height="86" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" rx="12"/>
+  <text x="778" y="457" fill="#64748b" font-size="11.5" font-weight="700" text-anchor="middle" letter-spacing="1">OUTPUT ARRAY</text>
+  <text x="660" y="478" fill="#94a3b8" font-size="11" text-anchor="middle">idx 0</text>
+  <text x="700" y="478" fill="#94a3b8" font-size="11" text-anchor="middle">idx 1</text>
+  <text x="740" y="478" fill="#94a3b8" font-size="11" text-anchor="middle">idx 2</text>
+  <text x="780" y="478" fill="#94a3b8" font-size="11" text-anchor="middle">idx 3</text>
+  <text x="820" y="478" fill="#94a3b8" font-size="11" text-anchor="middle">idx 4</text>
+
+  <!-- Output values -->
+  <text x="660" y="505" fill="#ef4444" font-size="20" font-weight="800" text-anchor="middle">6</text>
+  <text x="700" y="505" fill="#10b981" font-size="20" font-weight="800" text-anchor="middle">4</text>
+  <text x="740" y="505" fill="#10b981" font-size="20" font-weight="800" text-anchor="middle">4</text>
+  <text x="780" y="505" fill="#10b981" font-size="20" font-weight="800" text-anchor="middle">4</text>
+  <text x="820" y="505" fill="#ef4444" font-size="20" font-weight="800" text-anchor="middle">6</text>
+
+  <!-- Bracket -->
+  <text x="645" y="510" fill="#64748b" font-size="22" font-weight="300">[</text>
+  <text x="833" y="510" fill="#64748b" font-size="22" font-weight="300">]</text>
+
+  <!-- Active phase pointer for output array -->
+  <g class="ui-p1"><line x1="660" y1="513" x2="660" y2="519" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g class="ui-p2"><line x1="700" y1="513" x2="700" y2="519" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g class="ui-p3"><line x1="740" y1="513" x2="740" y2="519" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g class="ui-p4"><line x1="780" y1="513" x2="780" y2="519" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g class="ui-p5"><line x1="820" y1="513" x2="820" y2="519" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/></g>
+</svg>
